@@ -1,0 +1,52 @@
+name: Deploy to releases
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    environment: CI
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+    - name: Build with Ant
+      run: ant -noinput -buildfile build.xml
+      
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v2.5.1
+      
+    - name: Generate New Hex ID
+      run: node generateHexId.js
+    
+    - name: Read package.json
+      id: HexId
+      uses: juliangruber/read-file-action@v1
+      with:
+        path: ./newHexId
+      
+    - name: Automatic Releases
+      # You may pin to the exact commit or the version.
+      # uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
+      uses: marvinpinto/action-automatic-releases@v1.2.1
+      with:
+        # GitHub secret token
+        repo_token: ${{ secrets.DEPLOYMENT_KEY }}
+        # Git tag (for automatic releases)
+        automatic_release_tag: ${{ steps.HexID.outputs.content }}
+        # Should this release be marked as a draft?
+        draft: false
+        # Should this release be marked as a pre-release?
+        prerelease: true
+        # Release title (for automatic releases)
+        title: ${{ steps.HexID.outputs.content }}
+        # Assets to upload to the release
+        files: [./out]
